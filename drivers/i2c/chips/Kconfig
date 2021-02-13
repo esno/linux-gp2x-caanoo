@@ -163,4 +163,27 @@ config MENELAUS
 	  and other features that are often used in portable devices like
 	  cell phones and PDAs.
 
+config AD7993
+	tristate "ad7993 for Pollux Joystick"
+	depends on I2C=y
+	help
+	  If you say yes here you get support for the Texas Instruments
+	  TWL92330/Menelaus Power Management chip. This include voltage
+	  regulators, Dual slot memory card tranceivers, real-time clock
+	  and other features that are often used in portable devices like
+	  cell phones and PDAs.
+
+config SENSORS_MMA7660
+	bool "MMA7660 3D Accel chip"
+	depends on I2C=y && ARCH_POLLUX
+	help
+	  This is the Freescale gSensor MMA7455 driver for Linux kernel 2.6.x
+
+config SENSORS_KXTE9_2050
+	bool "Kionix KXTE9-2050 3D Accel chip"
+	depends on I2C=y && ARCH_POLLUX
+	help
+	  This is the Kionix gSensor KXTE9-2050 driver for Linux kernel 2.6.x
+
+
 endmenu
