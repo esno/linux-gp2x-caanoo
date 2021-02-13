@@ -11,9 +11,9 @@ config USB_EHCI_HCD
 	  The Enhanced Host Controller Interface (EHCI) is standard for USB 2.0
 	  "high speed" (480 Mbit/sec, 60 Mbyte/sec) host controller hardware.
 	  If your USB host controller supports USB 2.0, you will likely want to
-	  configure this Host Controller Driver.  At the time of this writing, 
+	  configure this Host Controller Driver.  At the time of this writing,
 	  the primary implementation of EHCI is a chip from NEC, widely available
-	  in add-on PCI cards, but implementations are in the works from other 
+	  in add-on PCI cards, but implementations are in the works from other
 	  vendors including Intel and Philips.  Motherboard support is appearing.
 
 	  EHCI controllers are packaged with "companion" host controllers (OHCI
@@ -233,7 +233,7 @@ config USB_SL811_HCD
 	help
 	  The SL811HS is a single-port USB controller that supports either
 	  host side or peripheral side roles.  Enable this option if your
-	  board has this chip, and you want to use it as a host controller. 
+	  board has this chip, and you want to use it as a host controller.
 	  If unsure, say N.
 
 	  To compile this driver as a module, choose M here: the
@@ -261,3 +261,15 @@ config USB_R8A66597_HCD
 	  To compile this driver as a module, choose M here: the
 	  module will be called r8a66597-hcd.
 
+config USB_UBI9032TEST_HCD
+	tristate "UBI9032 Test HCD support"
+	depends on USB
+	default N
+	help
+		The ubi9032_test HCD is a test module to check
+		if UBI9032 interface is ok or not.  Enable this option if your
+		board has this core, and you want to use it as a host controller.
+		If unsure, say N.
+
+		To compile this driver as a module, choose M here: the
+		module will be called ubi9032_test-hcd.
