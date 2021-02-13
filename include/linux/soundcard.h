@@ -979,6 +979,8 @@ typedef struct mixer_vol_table {
  */
 #define OSS_GETVERSION			_SIOR ('M', 118, int)
 
+#define SOUND_MIXER_PWDOWN		_SIO('M', 125)
+
 /*
  * Level 2 event types for /dev/sequencer
  */

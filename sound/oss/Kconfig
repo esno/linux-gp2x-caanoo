@@ -5,6 +5,13 @@
 #
 # Prompt user for primary drivers.
 
+config SOUND_POLLUX_WM1800
+	tristate "POLLUX Device driver for wolfson wm1800 audio codecs using OSS"
+	depends on SOUND && ARCH_POLLUX && I2C_POLLUX
+	---help---
+	This option enables device driver support for the WM1800 audio
+	codecs.  If unsure, say Y.
+
 config SOUND_BCM_CS4297A
 	tristate "Crystal Sound CS4297a (for Swarm)"
 	depends on SOUND_PRIME && SIBYTE_SWARM

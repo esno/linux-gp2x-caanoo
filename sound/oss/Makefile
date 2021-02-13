@@ -44,6 +44,7 @@ obj-$(CONFIG_SOUND_BT878)	+= btaudio.o
 obj-$(CONFIG_SOUND_WM97XX)	+= ac97_plugin_wm97xx.o
 
 obj-$(CONFIG_DMASOUND)		+= dmasound/
+obj-$(CONFIG_SOUND_POLLUX_WM1800)	+= pollux-wm1800.o pollux-iis.o
 
 # Declare multi-part drivers.
 
