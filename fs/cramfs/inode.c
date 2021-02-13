@@ -31,6 +31,8 @@ static const struct super_operations cramfs_ops;
 static const struct inode_operations cramfs_dir_inode_operations;
 static const struct file_operations cramfs_directory_operations;
 static const struct address_space_operations cramfs_aops;
+/* function pointer to uncompress block */
+static int (* cramfs_uncompress_block) (void *dst, int dstlen, void *src, int srclen);
 
 static DEFINE_MUTEX(read_mutex);
 
@@ -283,6 +285,16 @@ static int cramfs_fill_super(struct super_block *sb, void *data, int silent)
 		goto out;
 	}
 
+	/* check flag to see if LZO compression is used */
+	if (super.flags & CRAMFS_FLAG_LZO_COMPRESSION) {
+		sbi->cramfs_uncompress_block = &cramfs_uncompress_block_lzo;
+		printk("cramfs: LZO compression\n");
+	}
+	else {
+		sbi->cramfs_uncompress_block = &cramfs_uncompress_block_zlib;
+		printk("cramfs: ZLIB compression\n");
+	}
+
 	/* Check that the root inode is in a sane state */
 	if (!S_ISDIR(super.root.mode)) {
 		printk(KERN_ERR "cramfs: root is not a directory\n");
@@ -494,7 +506,7 @@ static int cramfs_readpage(struct file *file, struct page * page)
 			printk(KERN_ERR "cramfs: bad compressed blocksize %u\n", compr_len);
 		else {
 			mutex_lock(&read_mutex);
-			bytes_filled = cramfs_uncompress_block(pgdata,
+			bytes_filled = ((struct cramfs_sb_info *)(sb->s_fs_info))->cramfs_uncompress_block(pgdata,
 				 PAGE_CACHE_SIZE,
 				 cramfs_read(sb, start_offset, compr_len),
 				 compr_len);
