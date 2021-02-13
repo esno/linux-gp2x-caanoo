@@ -1395,7 +1395,9 @@ get_config:
 			/* Raise an exception to wipe out previous transaction
 			 * state (queued bufs, etc) and set the new config. */
 			raise_exception(fsg, FSG_STATE_CONFIG_CHANGE);
-			value = DELAYED_STATUS;
+			//HYUN_DEBUG
+			//value = DELAYED_STATUS;
+			
 		}
 		break;
 	case USB_REQ_GET_CONFIGURATION:
@@ -2013,8 +2015,8 @@ static int do_inquiry(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 {
 	u8	*buf = (u8 *) bh->buf;
 
-	static char vendor_id[] = "Linux   ";
-	static char product_id[] = "File-Stor Gadget";
+	static char product_id[] = "gph version 002";
+	static char vendor_id[] = "GP2X N35 ";
 
 	if (!fsg->curlun) {		// Unsupported LUNs are okay
 		fsg->bad_lun_okay = 1;
@@ -3361,8 +3363,11 @@ static void handle_exception(struct fsg_dev *fsg)
 			break;
 		if (rc != 0)			// STALL on errors
 			fsg_set_halt(fsg, fsg->ep0);
-		else				// Complete the status stage
-			ep0_queue(fsg);
+		else
+		{				// Complete the status stage
+		
+		//	ep0_queue(fsg);  /* HYUN_DEBUG */
+		}
 		break;
 
 	case FSG_STATE_DISCONNECT:

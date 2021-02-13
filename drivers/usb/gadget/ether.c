@@ -287,6 +287,10 @@ MODULE_PARM_DESC(host_addr, "Host Ethernet Address");
 #define	DEV_CONFIG_CDC
 #endif
 
+//lars 2010-07-20 
+#ifdef CONFIG_USB_GADGET_LF1000 
+#define	DEV_CONFIG_CDC
+#endif
 
 /*-------------------------------------------------------------------------*/
 
@@ -2378,7 +2382,8 @@ autoconf_fail:
 	if (!out_ep)
 		goto autoconf_fail;
 	out_ep->driver_data = out_ep;	/* claim */
-
+// lars remove below comment line 2010-07-20
+//#if 0
 #if defined(DEV_CONFIG_CDC) || defined(CONFIG_USB_ETH_RNDIS)
 	/* CDC Ethernet control interface doesn't require a status endpoint.
 	 * Since some hosts expect one, try to allocate one anyway.
@@ -2401,6 +2406,7 @@ autoconf_fail:
 		}
 	}
 #endif
+//#endif
 
 	/* one config:  cdc, else minimal subset */
 	if (!cdc) {

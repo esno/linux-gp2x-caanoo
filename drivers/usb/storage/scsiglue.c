@@ -61,12 +61,14 @@
 #include "transport.h"
 #include "protocol.h"
 
+void usb_memory_stick_enable(int flag);
+
 /***********************************************************************
  * Host functions 
  ***********************************************************************/
-
 static const char* host_info(struct Scsi_Host *host)
 {
+	usb_memory_stick_enable(1);
 	return "SCSI emulation for USB Mass Storage devices";
 }
 
