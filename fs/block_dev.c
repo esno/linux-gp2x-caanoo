@@ -63,7 +63,7 @@ static void kill_bdev(struct block_device *bdev)
 		return;
 	invalidate_bh_lrus();
 	truncate_inode_pages(bdev->bd_inode->i_mapping, 0);
-}	
+}
 
 int set_blocksize(struct block_device *bdev, int size)
 {
@@ -89,6 +89,7 @@ EXPORT_SYMBOL(set_blocksize);
 
 int sb_set_blocksize(struct super_block *sb, int size)
 {
+
 	if (set_blocksize(sb->s_bdev, size))
 		return 0;
 	/* If we get here, we know size is power of two
@@ -431,12 +432,12 @@ static loff_t block_llseek(struct file *file, loff_t offset, int origin)
 	mutex_unlock(&bd_inode->i_mutex);
 	return retval;
 }
-	
+
 /*
  *	Filp is never NULL; the only case when ->fsync() is called with
  *	NULL first argument is nfsd_sync_dir() and that's not a directory.
  */
- 
+
 static int block_fsync(struct file *filp, struct dentry *dentry, int datasync)
 {
 	return sync_blockdev(I_BDEV(filp->f_mapping->host));
@@ -616,7 +617,7 @@ void bdput(struct block_device *bdev)
 }
 
 EXPORT_SYMBOL(bdput);
- 
+
 static struct block_device *bd_acquire(struct inode *inode)
 {
 	struct block_device *bdev;
@@ -1089,6 +1090,8 @@ int check_disk_change(struct block_device *bdev)
 		bdops->revalidate_disk(bdev->bd_disk);
 	if (bdev->bd_disk->minors > 1)
 		bdev->bd_invalidated = 1;
+
+
 	return 1;
 }
 
@@ -1096,14 +1099,23 @@ EXPORT_SYMBOL(check_disk_change);
 
 void bd_set_size(struct block_device *bdev, loff_t size)
 {
+	int major;
 	unsigned bsize = bdev_hardsect_size(bdev);
-
 	bdev->bd_inode->i_size = size;
-	while (bsize < PAGE_CACHE_SIZE) {
-		if (size & bsize)
-			break;
-		bsize <<= 1;
+	major = MAJOR(bdev->bd_dev);
+
+	if( major == 254 ){
+		bsize = PAGE_CACHE_SIZE;
 	}
+	else
+	{
+		while (bsize < PAGE_CACHE_SIZE) {
+			if (size & bsize)
+				break;
+			bsize <<= 1;
+		}
+	}
+
 	bdev->bd_block_size = bsize;
 	bdev->bd_inode->i_blkbits = blksize_bits(bsize);
 }
@@ -1450,7 +1462,7 @@ struct block_device *open_bdev_excl(const char *path, int flags, void *holder)
 		goto blkdev_put;
 
 	return bdev;
-	
+
 blkdev_put:
 	blkdev_put(bdev);
 	return ERR_PTR(error);

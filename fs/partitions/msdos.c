@@ -128,7 +128,7 @@ parse_extended(struct parsed_partitions *state, struct block_device *bdev,
 			return;
 
 		if (!msdos_magic_present(data + 510))
-			goto done; 
+			goto done;
 
 		p = (struct partition *) (data + 0x1be);
 
@@ -141,7 +141,7 @@ parse_extended(struct parsed_partitions *state, struct block_device *bdev,
 		 * and OS/2 seems to use all four entries.
 		 */
 
-		/* 
+		/*
 		 * First process the data partition(s)
 		 */
 		for (i=0; i<4; i++, p++) {
@@ -238,7 +238,7 @@ parse_solaris_x86(struct parsed_partitions *state, struct block_device *bdev,
 }
 
 #if defined(CONFIG_BSD_DISKLABEL)
-/* 
+/*
  * Create devices for BSD partitions listed in a disklabel, under a
  * dos-like partition. See parse_extended() for more information.
  */
@@ -267,7 +267,7 @@ parse_bsd(struct parsed_partitions *state, struct block_device *bdev,
 
 		if (state->next == state->limit)
 			break;
-		if (p->p_fstype == BSD_FS_UNUSED) 
+		if (p->p_fstype == BSD_FS_UNUSED)
 			continue;
 		bsd_start = le32_to_cpu(p->p_offset);
 		bsd_size = le32_to_cpu(p->p_size);
@@ -412,12 +412,12 @@ static struct {
 	{NEW_SOLARIS_X86_PARTITION, parse_solaris_x86},
 	{0, NULL},
 };
- 
+
 int msdos_partition(struct parsed_partitions *state, struct block_device *bdev)
 {
 	int sector_size = bdev_hardsect_size(bdev) / 512;
 	Sector sect;
-	unsigned char *data;
+	unsigned char *data,*ptr;
 	struct partition *p;
 	int slot;
 
@@ -434,6 +434,44 @@ int msdos_partition(struct parsed_partitions *state, struct block_device *bdev)
 		printk( " [AIX]");
 		return 0;
 	}
+
+
+#if 1 /* HYUN_DEBUG */
+/*
+        some media hasn't partition table(or MBR)
+        in this case, asume boot record is located in address 0
+*/
+
+    /* PBR only for FAT16 */
+	ptr =  data + 0x36;
+	if( strncmp(ptr, "FAT", 3) == 0)
+	{
+   		ptr =  data + 0x1ee;
+ 		if( (ptr[0]==0x00) && (ptr[1]==0x00) ) goto IS_MBR;
+
+       	ptr = data + 0x20;
+        state->next = 5;
+       	put_partition(state, 1, 0, le32_to_cpu(*(unsigned long*)ptr)*sector_size);
+        put_dev_sector(sect);
+        return 1;
+	}
+
+        /* PBR only for FAT32 */
+	ptr = data + 0x52;
+    if( strncmp(ptr, "FAT", 3) == 0) {
+
+ 		ptr =  data + 0x1ee;
+ 		if( (ptr[0]==0x00) && (ptr[1]==0x00) ) goto IS_MBR;
+
+ 		ptr = data + 0x20;
+     	state->next = 5;
+      	put_partition(state, 1, 0, le32_to_cpu(*(unsigned long*)ptr)*sector_size);
+     	put_dev_sector(sect);
+    	return 1;
+	}
+
+IS_MBR:
+#endif
 
 	/*
 	 * Now that the 55aa signature is present, this is probably
