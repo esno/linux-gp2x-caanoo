@@ -37,6 +37,11 @@
 #define	USB_PERSIST	0
 #endif
 
+/* Lars Added For Detecting USB - Wireless LAN card */
+void usb_wireless_lan_insert(void);
+void usb_wireless_lan_remove(void);
+void usb_memory_stick_enable(int flag);
+
 struct usb_hub {
 	struct device		*intfdev;	/* the "interface" device */
 	struct usb_device	*hdev;
@@ -480,7 +485,7 @@ void usb_hub_tt_clear_buffer (struct usb_device *udev, int pipe)
 			: (USB_ENDPOINT_XFER_BULK << 11);
 	if (usb_pipein (pipe))
 		clear->devinfo |= 1 << 15;
-	
+
 	/* tell keventd to clear state for this TT */
 	spin_lock_irqsave (&tt->lock, flags);
 	list_add_tail (&clear->clear_list, &tt->clear_list);
@@ -556,7 +561,7 @@ static int hub_hub_status(struct usb_hub *hub,
 			"%s failed (err = %d)\n", __FUNCTION__, ret);
 	else {
 		*status = le16_to_cpu(hub->status->hub.wHubStatus);
-		*change = le16_to_cpu(hub->status->hub.wHubChange); 
+		*change = le16_to_cpu(hub->status->hub.wHubChange);
 		ret = 0;
 	}
 	mutex_unlock(&hub->status_mutex);
@@ -1083,6 +1088,32 @@ void usb_set_device_state(struct usb_device *udev,
 	spin_unlock_irqrestore(&device_state_lock, flags);
 }
 
+/* Fix by lars-2010-04-15 for UBI9032 */
+#ifdef CONFIG_USB_UBI9032TEST_HCD_MODULE //include/linux/autoconf.h
+#define USB_MAX_DEV_ADDR 16
+static void choose_address(struct usb_device *udev)
+{
+	int		devnum;
+	struct usb_bus	*bus = udev->bus;
+
+	/* If khubd ever becomes multithreaded, this will need a lock */
+
+	/* Try to allocate the next devnum beginning at bus->devnum_next. */
+	devnum = find_next_zero_bit(bus->devmap.devicemap, USB_MAX_DEV_ADDR,
+			bus->devnum_next);
+	if (devnum >= USB_MAX_DEV_ADDR)
+		devnum = find_next_zero_bit(bus->devmap.devicemap, USB_MAX_DEV_ADDR, 1);
+
+	bus->devnum_next = ( devnum >= (USB_MAX_DEV_ADDR - 1) ? 1 : devnum + 1);
+
+	if (devnum < USB_MAX_DEV_ADDR) {
+		set_bit(devnum, bus->devmap.devicemap);
+		udev->devnum = devnum;
+	}
+}
+
+
+#else /* CONFIG_USB_UBI_9032TEST_HCD */
 static void choose_address(struct usb_device *udev)
 {
 	int		devnum;
@@ -1103,6 +1134,7 @@ static void choose_address(struct usb_device *udev)
 		udev->devnum = devnum;
 	}
 }
+#endif /* CONFIG_USB_UBI9032TEST_HCD */
 
 static void release_address(struct usb_device *udev)
 {
@@ -1136,6 +1168,21 @@ static inline void usb_stop_pm(struct usb_device *udev)
 
 #endif
 
+/* Lars Added Below Function For Detecting wireless lan device */
+#define RALINK_RT3070_VENDOR_ID		(0x148f)
+#define RALINK_RT3070_PRODUCT_ID	(0x3070)
+int check_wireless_lan_device(struct usb_device *udev)
+{
+	int ret_val = 0;
+	if((udev->descriptor.idVendor == RALINK_RT3070_VENDOR_ID) &&
+		(udev->descriptor.idProduct == RALINK_RT3070_PRODUCT_ID)) {
+		ret_val = 1;
+	}
+
+	return ret_val;
+}
+
+
 /**
  * usb_disconnect - disconnect a device (usbcore-internal)
  * @pdev: pointer to device being disconnected
@@ -1168,7 +1215,13 @@ void usb_disconnect(struct usb_device **pdev)
 	 */
 	usb_set_device_state(udev, USB_STATE_NOTATTACHED);
 	dev_info (&udev->dev, "USB disconnect, address %d\n", udev->devnum);
+	/* Lars Insert */
+	//FIX - check wireless lan device driver
+	if(check_wireless_lan_device(udev)) {
+		usb_wireless_lan_remove();
+	}
 
+	usb_memory_stick_enable(0);
 	usb_lock_device(udev);
 
 	/* Free up all the children before we remove this device */
@@ -1398,6 +1451,24 @@ int usb_new_device(struct usb_device *udev)
 	show_string(udev, "Product", udev->product);
 	show_string(udev, "Manufacturer", udev->manufacturer);
 	show_string(udev, "SerialNumber", udev->serial);
+	/* for lars debug */
+	/*
+	printk("new device strings: Mfr=%d, Product=%d, "
+		"SerialNumber=%d\n",
+		udev->descriptor.iManufacturer,
+		udev->descriptor.iProduct,
+		udev->descriptor.iSerialNumber);
+	printk("Vendor ID: 0x%04x, Product ID: 0x%04x, Device Class:0x%02x, SubClass:0x%02x\n",
+			udev->descriptor.idVendor, udev->descriptor.idProduct, udev->descriptor.bDeviceClass, udev->descriptor.bDeviceSubClass);
+	printk("Product String: %s\n", udev->product);
+	printk("Manufacturer String %s\n", udev->manufacturer);
+	printk("SerialNumber: %s\n", udev->serial);
+	*/
+
+	if(check_wireless_lan_device(udev)) {
+		usb_wireless_lan_insert();
+	}
+
 	return err;
 
 fail:
@@ -1504,7 +1575,7 @@ static int hub_port_status(struct usb_hub *hub, int port1,
 			ret = -EIO;
 	} else {
 		*status = le16_to_cpu(hub->status->port.wPortStatus);
-		*change = le16_to_cpu(hub->status->port.wPortChange); 
+		*change = le16_to_cpu(hub->status->port.wPortChange);
 		ret = 0;
 	}
 	mutex_unlock(&hub->status_mutex);
@@ -2071,7 +2142,7 @@ static inline int remote_wakeup(struct usb_device *udev)
  * Between connect detection and reset signaling there must be a delay
  * of 100ms at least for debounce and power-settling.  The corresponding
  * timer shall restart whenever the downstream port detects a disconnect.
- * 
+ *
  * Apparently there are some bluetooth and irda-dongles and a number of
  * low-speed devices for which this debounce period may last over a second.
  * Not covered by the spec - but easy to deal with.
@@ -2234,7 +2305,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 	default:
 		goto fail;
 	}
- 
+
 	type = "";
 	switch (udev->speed) {
 	case USB_SPEED_LOW:	speed = "low";	break;
@@ -2260,7 +2331,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 		udev->tt = &hub->tt;
 		udev->ttport = port1;
 	}
- 
+
 	/* Why interleave GET_DESCRIPTOR and SET_ADDRESS this way?
 	 * Because device hardware and firmware is sometimes buggy in
 	 * this area, and this is how Linux has done it for ages.
@@ -2347,7 +2418,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 				devnum, retval);
 			goto fail;
 		}
- 
+
 		/* cope with hardware quirkiness:
 		 *  - let SET_ADDRESS settle, some device hardware wants it
 		 *  - read ep0 maxpacket even for high and low speed,
@@ -2384,7 +2455,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 		udev->ep0.desc.wMaxPacketSize = cpu_to_le16(i);
 		ep0_reinit(udev);
 	}
-  
+
 	retval = usb_get_device_descriptor(udev, USB_DT_DEVICE_SIZE);
 	if (retval < (signed)sizeof(udev->descriptor)) {
 		dev_err(&udev->dev, "device descriptor read/%s, error %d\n",
@@ -2484,7 +2555,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 	struct device *hub_dev = hub->intfdev;
 	u16 wHubCharacteristics = le16_to_cpu(hub->descriptor->wHubCharacteristics);
 	int status, i;
- 
+
 	dev_dbg (hub_dev,
 		"port %d, status %04x, change %04x, %s\n",
 		port1, portstatus, portchange, portspeed (portstatus));
@@ -2493,7 +2564,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 		set_port_led(hub, port1, HUB_LED_AUTO);
 		hub->indicator[port1-1] = INDICATOR_AUTO;
 	}
- 
+
 	/* Disconnect any existing devices under this port */
 	if (hdev->children[port1-1])
 		usb_disconnect(&hdev->children[port1-1]);
@@ -2523,7 +2594,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 		if ((wHubCharacteristics & HUB_CHAR_LPSM) < 2
 				&& !(portstatus & (1 << USB_PORT_FEAT_POWER)))
 			set_port_feature(hdev, port1, USB_PORT_FEAT_POWER);
- 
+
 		if (portstatus & USB_PORT_STAT_ENABLE)
   			goto done;
 		return;
@@ -2590,7 +2661,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 				goto loop_disable;
 			}
 		}
- 
+
 		/* check for devices running slower than they could */
 		if (le16_to_cpu(udev->descriptor.bcdUSB) >= 0x0200
 				&& udev->speed == USB_SPEED_FULL
@@ -2642,7 +2713,7 @@ loop:
 		if ((status == -ENOTCONN) || (status == -ENOTSUPP))
 			break;
 	}
- 
+
 done:
 	hub_port_disable(hub, port1, 1);
 }
@@ -2771,7 +2842,7 @@ static void hub_events(void)
 				 * EM interference sometimes causes badly
 				 * shielded USB devices to be shutdown by
 				 * the hub, this hack enables them again.
-				 * Works at least with mouse driver. 
+				 * Works at least with mouse driver.
 				 */
 				if (!(portstatus & USB_PORT_STAT_ENABLE)
 				    && !connect_change
@@ -2801,7 +2872,7 @@ static void hub_events(void)
 					"resume on port %d, status %d\n",
 					i, ret);
 			}
-			
+
 			if (portchange & USB_PORT_STAT_C_OVERCURRENT) {
 				dev_err (hub_dev,
 					"over-current change on port %d\n",
@@ -3042,7 +3113,7 @@ int usb_reset_device(struct usb_device *udev)
 
 	if (ret < 0)
 		goto re_enumerate;
- 
+
 	/* Device might have changed firmware (DFU or similar) */
 	if (memcmp(&udev->descriptor, &descriptor, sizeof descriptor)
 			|| config_descriptors_changed (udev)) {
@@ -3050,7 +3121,7 @@ int usb_reset_device(struct usb_device *udev)
 		udev->descriptor = descriptor;	/* for disconnect() calls */
 		goto re_enumerate;
   	}
-  
+
 	if (!udev->actconfig)
 		goto done;
 
@@ -3088,7 +3159,7 @@ int usb_reset_device(struct usb_device *udev)
 
 done:
 	return 0;
- 
+
 re_enumerate:
 	hub_port_logical_disconnect(parent_hub, port1);
 	return -ENODEV;
