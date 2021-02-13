@@ -19,6 +19,11 @@ config LOGO_LINUX_MONO
 	bool "Standard black and white Linux logo"
 	default y
 
+config LOGO_LINUX_GPH
+	bool "Game park holdings logo"
+	depends on LOGO
+	default y
+
 config LOGO_LINUX_VGA16
 	bool "Standard 16-color Linux logo"
 	default y

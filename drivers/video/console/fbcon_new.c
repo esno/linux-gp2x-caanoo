@@ -212,45 +212,6 @@ static void fbcon_start(void);
 static void fbcon_exit(void);
 static struct device *fbcon_device;
 
-#include "../logo/boot_on_01.h"
-#include "../logo/boot_on_02.h"
-#include "../logo/boot_on_03.h"
-#include "../logo/boot_on_04.h"
-#include "../logo/boot_on_05.h"
-#include "../logo/boot_on_06.h"
-#include "../logo/boot_on_07.h"
-
-static void boot_image(char *src) // by simon
-{
-	struct fb_info *info = registered_fb[0];
-	unsigned char *fb = info->screen_base;
-	int x, y;
-
-	for (y=84+94; y>84; y--) {
-		for (x=0; x<320; x++) {
-			fb_writeb(*src++, fb+y*320*3+x*3);
-			fb_writeb(*src++, fb+y*320*3+x*3+1);
-			fb_writeb(*src++, fb+y*320*3+x*3+2);
-		}
-	}
-}
-
-static void boot_animation(void *unused) // by simon
-{
-	int i;
-
-	for (i=0; i<3; i++) {
-		boot_image(boot_on_01);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_02);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_03);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_04);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_05);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_06);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_07);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-	}
-		boot_image(boot_on_07);
-}
-
 #ifdef CONFIG_MAC
 /*
  * On the Macintoy, there may or may not be a working VBL int. We need to probe
@@ -467,21 +428,19 @@ static void fb_flashcursor(struct work_struct *work)
 
 #endif
 
-
 }
 
 #if defined(CONFIG_ATARI) || defined(CONFIG_MAC)
 static int cursor_blink_rate;
 static irqreturn_t fb_vbl_handler(int irq, void *dev_id)
 {
-#ifndef CONFIG_LOGO_LINUX_GPH
 	struct fb_info *info = dev_id;
 
 	if (vbl_cursor_cnt && --vbl_cursor_cnt == 0) {
 		schedule_work(&info->queue);
 		vbl_cursor_cnt = cursor_blink_rate;
 	}
-#endif
+
 	return IRQ_HANDLED;
 }
 #endif
@@ -1275,10 +1234,6 @@ static void fbcon_init(struct vc_data *vc, int init)
 
 	if (logo)
 		fbcon_prepare_logo(vc, info, cols, rows, new_cols, new_rows);
-
-#ifndef CONFIG_BLK_DEV_INITRD
-	(void)kernel_thread(boot_animation, NULL, 0); // by simon
-#endif
 
 	if (vc == svc && softback_buf)
 		fbcon_update_softback(vc);
