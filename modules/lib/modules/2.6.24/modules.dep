@@ -1,0 +1,37 @@
+kernel/net/ieee80211/ieee80211.ko: kernel/net/ieee80211/ieee80211_crypt.ko
+kernel/net/ieee80211/ieee80211_crypt.ko:
+kernel/net/mac80211/mac80211.ko: kernel/net/wireless/cfg80211.ko
+kernel/net/packet/af_packet.ko:
+kernel/net/ipv4/netfilter/ip_tables.ko:
+kernel/net/ipv4/xfrm4_mode_tunnel.ko:
+kernel/net/ipv4/xfrm4_mode_transport.ko:
+kernel/net/ipv4/xfrm4_mode_beet.ko:
+kernel/net/wireless/cfg80211.ko:
+kernel/crypto/pcbc.ko:
+kernel/crypto/arc4.ko:
+kernel/crypto/ecb.ko:
+kernel/crypto/aes_generic.ko:
+kernel/fs/smbfs/smbfs.ko:
+kernel/drivers/block/loop.ko:
+kernel/drivers/haptic/simple_isa1200.ko:
+kernel/drivers/cdrom/cdrom.ko:
+kernel/drivers/scsi/sr_mod.ko: kernel/drivers/scsi/scsi_mod.ko kernel/drivers/cdrom/cdrom.ko
+kernel/drivers/scsi/sg.ko: kernel/drivers/scsi/scsi_mod.ko
+kernel/drivers/scsi/osst.ko: kernel/drivers/scsi/scsi_mod.ko
+kernel/drivers/scsi/st.ko: kernel/drivers/scsi/scsi_mod.ko
+kernel/drivers/scsi/scsi_mod.ko:
+kernel/drivers/scsi/scsi_wait_scan.ko: kernel/drivers/scsi/scsi_mod.ko
+kernel/drivers/scsi/sd_mod.ko: kernel/drivers/scsi/scsi_mod.ko
+kernel/drivers/scsi/ch.ko: kernel/drivers/scsi/scsi_mod.ko
+kernel/drivers/usb/storage/libusual.ko: kernel/drivers/usb/core/usbcore.ko
+kernel/drivers/usb/storage/usb-storage.ko: kernel/drivers/scsi/scsi_mod.ko kernel/drivers/usb/storage/libusual.ko kernel/drivers/usb/core/usbcore.ko
+kernel/drivers/usb/gadget/g_file_storage.ko: kernel/drivers/usb/gadget/lf1000_udc.ko
+kernel/drivers/usb/gadget/lf1000_udc.ko:
+kernel/drivers/usb/gadget/g_ether.ko: kernel/drivers/usb/gadget/lf1000_udc.ko
+kernel/drivers/usb/host/ubi9032_test.ko:
+kernel/drivers/usb/core/usbcore.ko:
+kernel/drivers/i2c/chips/ad7993.ko:
+kernel/drivers/hid/hid.ko:
+kernel/drivers/hid/usbhid/usbhid.ko: kernel/drivers/hid/hid.ko kernel/drivers/usb/core/usbcore.ko
+kernel/drivers/rtc/rtc-isl1208.ko: kernel/drivers/rtc/rtc-core.ko
+kernel/drivers/rtc/rtc-core.ko:
