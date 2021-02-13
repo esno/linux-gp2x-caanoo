@@ -52,10 +52,7 @@
 #include <linux/mtd/partitions.h>
 #endif
 
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
 extern unsigned short *leb_bbt;	//by simon
-#endif
-
 //#define GDEBUG
 #ifdef GDEBUG
 	#define gprintk(fmt, x... ) printk( "%s: " fmt, __FUNCTION__ , ## x)
@@ -616,18 +613,16 @@ static void nand_command_lp(struct mtd_info *mtd, unsigned int command,
 			chip->cmd_ctrl(mtd, column >> 8, ctrl);
 		}
 		if (page_addr != -1) {
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-            /* 8MB ~ 56MB skip bad_block (using cramfs) */
-			/* 페이지 주소 환산시 8MB = 0x1000, 56MB = 0x7000 */
-			if(page_addr >= 0x1000 && page_addr < 0x7000)
+			/* jbmaster 16MB ~ 64MB skip bad_block (using cramfs) */
+			/* 페이지 주소 환산시 16MB = 0x2000, 64MB = 0x8000 */
+			if(page_addr >= 0x2000 && page_addr < 0x8000)
 			{
 	            if (leb_bbt[page_addr/(mtd->erasesize/mtd->writesize)])
 					page_addr = leb_bbt[page_addr/(mtd->erasesize/mtd->writesize)]
 						* (mtd->erasesize/mtd->writesize)
 						+ (page_addr % (mtd->erasesize/mtd->writesize));
 			}
-#endif
-
+			/* 이하 원래 코드 */
 			chip->cmd_ctrl(mtd, page_addr, ctrl);
 			chip->cmd_ctrl(mtd, page_addr >> 8,
 				       NAND_NCE | NAND_ALE);
@@ -2595,7 +2590,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		chip->ecc.write_page = nand_write_page_swecc;
 		chip->ecc.read_oob = nand_read_oob_std;
 		chip->ecc.write_oob = nand_write_oob_std;
-#if 0	/* hyun */
+#if 1	/* hyun */
 		if( mtd->writesize  >= 2048) chip->ecc.size = 512;
 		else chip->ecc.size = 256;
 #else
