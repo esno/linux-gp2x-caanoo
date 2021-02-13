@@ -41,6 +41,14 @@ config JOYSTICK_A3D
 	  To compile this driver as a module, choose M here: the
 	  module will be called a3d.
 
+config POLLUX_ACCEL
+	tristate "Pollux 3D Accel devices"
+	help
+	  Kionix 3D Axis device driver.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called accel.
+
 config JOYSTICK_ADI
 	tristate "Logitech ADI digital joysticks and gamepads"
 	select GAMEPORT
