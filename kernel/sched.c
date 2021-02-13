@@ -67,6 +67,8 @@
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
 
+#include <asm/arch/pollux_clkpwr.h>
+
 /*
  * Scheduler clock - returns current time in nanosec units.
  * This is default implementation.
@@ -4660,6 +4662,10 @@ asmlinkage long sys_sched_yield(void)
 	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
 	_raw_spin_unlock(&rq->lock);
 	preempt_enable_no_resched();
+
+#if 0 /* set  idle mode */
+	MES_CLKPWR_SetCurrentPowerMode(MES_CLKPWR_POWERMODE_IDLE);
+#endif
 
 	schedule();
 
