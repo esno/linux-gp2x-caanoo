@@ -2873,12 +2873,13 @@ void __init kmem_cache_init(void)
 	kmem_size = sizeof(struct kmem_cache);
 #endif
 
-
+#ifdef 	CONFIG_POLLUX_KERNEL_BOOT_MESSAGE_ENABLE
 	printk(KERN_INFO "SLUB: Genslabs=%d, HWalign=%d, Order=%d-%d, MinObjects=%d,"
 		" CPUs=%d, Nodes=%d\n",
 		caches, cache_line_size(),
 		slub_min_order, slub_max_order, slub_min_objects,
 		nr_cpu_ids, nr_node_ids);
+#endif
 }
 
 /*
