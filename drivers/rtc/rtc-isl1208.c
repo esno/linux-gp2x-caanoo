@@ -14,6 +14,7 @@
 #include <linux/i2c.h>
 #include <linux/bcd.h>
 #include <linux/rtc.h>
+#include <linux/delay.h>
 
 #define DRV_NAME "isl1208"
 #define DRV_VERSION "0.2"
@@ -60,6 +61,8 @@
 
 /* i2c configuration */
 #define ISL1208_I2C_ADDR 0xde
+
+static int no_set = 0;
 
 static unsigned short normal_i2c[] = {
 	ISL1208_I2C_ADDR>>1, I2C_CLIENT_END
@@ -148,7 +151,11 @@ static int isl1208_i2c_validate_client(struct i2c_client *client)
 
 static int isl1208_i2c_get_sr(struct i2c_client *client)
 {
-	return i2c_smbus_read_byte_data(client, ISL1208_REG_SR) == -1 ? -EIO:0;
+	int sr = i2c_smbus_read_byte_data(client, ISL1208_REG_SR);
+	if (sr < 0)
+		return -EIO;
+
+	return sr;
 }
 
 static int isl1208_i2c_get_atr(struct i2c_client *client)
@@ -265,12 +272,22 @@ static int isl1208_i2c_read_time(struct i2c_client *client,
 		return -EIO;
 	}
 
+#if 0
 	sr = isl1208_i2c_read_regs(client, 0, regs, ISL1208_RTC_SECTION_LEN);
 	if (sr < 0) {
 		dev_err(&client->dev, "%s: reading RTC section failed\n",
 			__func__);
 		return sr;
 	}
+#else
+	regs[ISL1208_REG_SC] = i2c_smbus_read_byte_data(client, ISL1208_REG_SC);
+	regs[ISL1208_REG_MN] = i2c_smbus_read_byte_data(client, ISL1208_REG_MN);
+	regs[ISL1208_REG_HR] = i2c_smbus_read_byte_data(client, ISL1208_REG_HR);
+	regs[ISL1208_REG_DT] = i2c_smbus_read_byte_data(client, ISL1208_REG_DT);
+	regs[ISL1208_REG_MO] = i2c_smbus_read_byte_data(client, ISL1208_REG_MO);
+	regs[ISL1208_REG_YR] = i2c_smbus_read_byte_data(client, ISL1208_REG_YR);
+	regs[ISL1208_REG_DW] = i2c_smbus_read_byte_data(client, ISL1208_REG_DW);
+#endif
 
 	tm->tm_sec = BCD2BIN(regs[ISL1208_REG_SC]);
 	tm->tm_min = BCD2BIN(regs[ISL1208_REG_MN]);
@@ -285,10 +302,28 @@ static int isl1208_i2c_read_time(struct i2c_client *client,
 		}
 	}
 
+#if 0
 	tm->tm_mday = BCD2BIN(regs[ISL1208_REG_DT]);
 	tm->tm_mon = BCD2BIN(regs[ISL1208_REG_MO]) - 1; /* rtc starts at 1 */
 	tm->tm_year = BCD2BIN(regs[ISL1208_REG_YR]) + 100;
 	tm->tm_wday = BCD2BIN(regs[ISL1208_REG_DW]);
+#else
+
+	if(no_set){
+		tm->tm_year = 110;
+		tm->tm_mon = 0;
+		tm->tm_mday =1;
+		tm->tm_wday =1;
+	}else{
+		tm->tm_mday = BCD2BIN(regs[ISL1208_REG_DT]);
+		tm->tm_mon = BCD2BIN(regs[ISL1208_REG_MO]) - 1; /* rtc starts at 1 */
+		tm->tm_year = BCD2BIN(regs[ISL1208_REG_YR]) + 100;
+		tm->tm_wday = BCD2BIN(regs[ISL1208_REG_DW]);
+	}
+
+#endif
+
+	printk("%4d-%02d-%02d %02d:%02d:%02d  (read)\n", 1900 + tm->tm_year, tm->tm_mon+1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 
 	return 0;
 }
@@ -333,8 +368,11 @@ static int isl1208_rtc_read_time(struct device *dev, struct rtc_time *tm)
 static int isl1208_i2c_set_time(struct i2c_client *client,
 				struct rtc_time const *tm)
 {
-	int sr;
+	int sr,ret;
+
 	u8 regs[ISL1208_RTC_SECTION_LEN] = { 0, };
+
+	printk("%4d-%02d-%02d %02d:%02d:%02d (WRITE)\n", 1900 + tm->tm_year, tm->tm_mon+1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 
 	regs[ISL1208_REG_SC] = BIN2BCD(tm->tm_sec);
 	regs[ISL1208_REG_MN] = BIN2BCD(tm->tm_min);
@@ -360,6 +398,7 @@ static int isl1208_i2c_set_time(struct i2c_client *client,
 		return sr;
 	}
 
+#if 0
 	/* write RTC registers */
 	sr = isl1208_i2c_set_regs(client, 0, regs, ISL1208_RTC_SECTION_LEN);
 	if (sr < 0) {
@@ -367,6 +406,16 @@ static int isl1208_i2c_set_time(struct i2c_client *client,
 			__func__);
 		return sr;
 	}
+#else
+	i2c_smbus_write_byte_data (client, ISL1208_REG_SC, regs[ISL1208_REG_SC]);
+	i2c_smbus_write_byte_data (client, ISL1208_REG_MN, regs[ISL1208_REG_MN]);
+	i2c_smbus_write_byte_data (client, ISL1208_REG_HR, regs[ISL1208_REG_HR]);
+	i2c_smbus_write_byte_data (client, ISL1208_REG_DT, regs[ISL1208_REG_DT]);
+	i2c_smbus_write_byte_data (client, ISL1208_REG_MO, regs[ISL1208_REG_MO]);
+	i2c_smbus_write_byte_data (client, ISL1208_REG_YR, regs[ISL1208_REG_YR]);
+	i2c_smbus_write_byte_data (client, ISL1208_REG_DW, regs[ISL1208_REG_DW]);
+
+#endif
 
 	/* clear WRTC again */
 	sr = i2c_smbus_write_byte_data (client, ISL1208_REG_SR,
@@ -375,6 +424,8 @@ static int isl1208_i2c_set_time(struct i2c_client *client,
 		dev_err(&client->dev, "%s: writing SR failed\n", __func__);
 		return sr;
 	}
+
+	no_set = 0;
 
 	return 0;
 }
@@ -399,7 +450,6 @@ static const struct rtc_class_ops isl1208_rtc_ops = {
 };
 
 /* sysfs interface */
-
 static ssize_t isl1208_sysfs_show_atrim(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
@@ -517,9 +567,12 @@ isl1208_probe(struct i2c_adapter *adapter, int addr, int kind)
 		goto failout_unregister;
 	}
 
-	if (rc & ISL1208_REG_SR_RTCF)
+	if(rc & ISL1208_REG_SR_RTCF){
 		dev_warn(&new_client->dev, "rtc power failure detected, "
-			 "please set clock.\n");
+		 "please set clock.\n");
+		i2c_smbus_write_byte_data (new_client, ISL1208_REG_ATR, 0x20);  // 4.5pF
+		no_set = 1;
+	}
 
 	rc = device_create_file(&new_client->dev, &dev_attr_atrim);
 	if (rc < 0)
