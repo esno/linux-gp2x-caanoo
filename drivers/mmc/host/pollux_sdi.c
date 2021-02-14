@@ -673,9 +673,9 @@ static void pollux_sdi_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 #endif
 
-    mdelay(10);
+   // mdelay(10);
     if( ios->clock == 400000 && host->clock == 400000 ) goto iosend;
-    if( ios->clock == 25000000 && host->clock == 25000000 ) goto iosend;
+   // if( ios->clock == 25000000 && host->clock == 25000000 ) goto iosend;
 
     if( ios->clock == 400000 )
 	{
