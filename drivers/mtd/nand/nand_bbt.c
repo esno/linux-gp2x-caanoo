@@ -63,10 +63,6 @@
 #include <linux/vmalloc.h>
 
 
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-unsigned short *leb_bbt = NULL;	// by simon
-#endif
-
 /**
  * check_pattern - [GENERIC] check if a pattern is in the buffer
  * @buf:	the buffer to search
@@ -381,9 +377,6 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
 	int startblock;
 	loff_t from;
 	size_t readlen;
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-    int lastblock;
-#endif
 
 #ifdef 	CONFIG_POLLUX_KERNEL_BOOT_MESSAGE_ENABLE
 	printk(KERN_INFO "Scanning device for bad blocks\n");
@@ -448,40 +441,9 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
 			mtd->ecc_stats.badblocks++;
 		}
 
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-		// by simon
-		/* bbt 알고리즘은 하나의 배열에 4개의 배드블럭값을 저장하지만 */
-		/* leb_bbt 배열에는 하나에 하나의 배드블럭값을 저장 */
-		leb_bbt[i>>1] = i>>1;
-#endif
-
 		i += 2;
 		from += (1 << this->bbt_erase_shift);
 	}
-
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-	lastblock = numblocks;
-
-    // by simon, modify jbmaster
-	/* cramfs영역만 배드블럭 스킵핑 한다=> 맨뒤에 있는 valid block 부터 채워 나간다 */
-	/* startblock * 2 = (8MB/128KB*2),
-	   numblocks * 2 = (56MB/128KB*2) */
-    for (i = 128; i < 896; i += 2) {
-		if (this->bbt[i >> 3] & (0x03 << (i & 0x6))) {
-			do {
-				lastblock-=2;
-			} while (this->bbt[lastblock >> 3] & (0x03 << (lastblock & 0x6)));
-
-			leb_bbt[i>>1] = (lastblock>>1);
-			printk("[cramfs] leb_bbt[%d] = %d\n", i>>1, leb_bbt[i>>1]);
-		}
-	}
-
-    for (i = startblock; i < numblocks; i += 2)
-		if (i>>1 != leb_bbt[i>>1])
-			printk("leb_bbt[%d] = %d\n", i>>1, leb_bbt[i>>1]);
-
-#endif
 
 	return 0;
 }
@@ -1008,13 +970,7 @@ int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
 	/* Allocate memory (2bit per block) and clear the memory bad block table */
 	this->bbt = kzalloc(len, GFP_KERNEL);
 
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-    leb_bbt   = kzalloc((mtd->size >> this->bbt_erase_shift) * sizeof(unsigned short), GFP_KERNEL); // by simon
-
-    if (!this->bbt || !leb_bbt) {
-#else
 	if (!this->bbt) {
-#endif
 		printk(KERN_ERR "nand_scan_bbt: Out of memory\n");
 		return -ENOMEM;
 	}
@@ -1253,14 +1209,6 @@ int nand_isbad_bbt(struct mtd_info *mtd, loff_t offs, int allowbbt)
 
 	/* Get block number * 2 */
 	block = (int)(offs >> (this->bbt_erase_shift - 1));
-
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-    /* startblock * 2 = (8MB/128KB*2),
-	   numblocks * 2 = (56MB/128KB*2) */
-	if( block >= 128 && block < 896 ) {
-		block = leb_bbt[block/2]*2; // by simon modify by jbmaster
-	}
-#endif
 
 	res = (this->bbt[block >> 3] >> (block & 0x06)) & 0x03;
 

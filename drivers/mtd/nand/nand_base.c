@@ -52,10 +52,6 @@
 #include <linux/mtd/partitions.h>
 #endif
 
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-extern unsigned short *leb_bbt;	//by simon
-#endif
-
 //#define GDEBUG
 #ifdef GDEBUG
 	#define gprintk(fmt, x... ) printk( "%s: " fmt, __FUNCTION__ , ## x)
@@ -616,18 +612,6 @@ static void nand_command_lp(struct mtd_info *mtd, unsigned int command,
 			chip->cmd_ctrl(mtd, column >> 8, ctrl);
 		}
 		if (page_addr != -1) {
-#ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-            /* 8MB ~ 56MB skip bad_block (using cramfs) */
-			/* 페이지 주소 환산시 8MB = 0x1000, 56MB = 0x7000 */
-			if(page_addr >= 0x1000 && page_addr < 0x7000)
-			{
-	            if (leb_bbt[page_addr/(mtd->erasesize/mtd->writesize)])
-					page_addr = leb_bbt[page_addr/(mtd->erasesize/mtd->writesize)]
-						* (mtd->erasesize/mtd->writesize)
-						+ (page_addr % (mtd->erasesize/mtd->writesize));
-			}
-#endif
-
 			chip->cmd_ctrl(mtd, page_addr, ctrl);
 			chip->cmd_ctrl(mtd, page_addr >> 8,
 				       NAND_NCE | NAND_ALE);
