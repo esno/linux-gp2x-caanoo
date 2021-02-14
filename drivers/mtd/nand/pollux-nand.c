@@ -21,11 +21,8 @@
 #include <asm/mach-types.h>
 
 #define NAND_SIZE		128
-#define MTD0_SIZE       8
-#define MTD1_SIZE       48
-#define MTD2_SIZE       10
-#define BED_TABLE_SIZE  5	// VALID BLOCK Min 2,008,  Max 2,048 (40blk => 5MB)
-#define MTD3_SIZE       ( NAND_SIZE - ( MTD0_SIZE + MTD1_SIZE + MTD2_SIZE + BED_TABLE_SIZE ) )
+#define MTD0_SIZE       8		// bootloader, kernel image
+#define MTD1_SIZE       88		// rootfs
 
 static struct mtd_info *pollux_mtd = NULL;
 
@@ -34,7 +31,7 @@ static struct mtd_info *pollux_mtd = NULL;
 static const char *part_probes[] = { "cmdlinepart", NULL };
 
 #ifdef CONFIG_POLLUX_FAST_BOOT_ENABLE
-#define NUM_PARTITIONS	4
+#define NUM_PARTITIONS	3
 struct mtd_partition partition_info32[] = {
 	[0] = {
 		.name	= "d0",
@@ -42,22 +39,16 @@ struct mtd_partition partition_info32[] = {
 		.offset	= 0x0,
 		.mask_flags = MTD_WRITEABLE,        // read-only area
 	},
-	[1] = {
-		.name	= "d1",
-		.size	= MTD1_SIZE*(SZ_1M),       	// 48M bytes
-		.offset	= MTDPART_OFS_APPEND,
+    [1] = {
+	    .name   = "d1",
+		.size   = MTD1_SIZE*(SZ_1M),
+		.offset = MTDPART_OFS_NXTBLK,   /* Align this partition with the erase size */
 		.mask_flags = 0,
 	},
 	[2] = {
-		.name	= "d2",
-		.size	= MTD2_SIZE*(SZ_1M),       	// 10M bytes
-		.offset	= MTDPART_OFS_APPEND,
-		.mask_flags = 0,
-	},
-	[3] = {
-		.name	= "d3",
-		.size	= MTD3_SIZE*(SZ_1M),
-		.offset	= MTDPART_OFS_APPEND,
+		.name   = "d2",
+		.size   = MTDPART_SIZ_FULL,
+		.offset = MTDPART_OFS_NXTBLK,   /* Align this partition with the erase size */
 		.mask_flags = 0,
 	},
 };
