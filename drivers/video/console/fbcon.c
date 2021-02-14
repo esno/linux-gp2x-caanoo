@@ -239,14 +239,14 @@ static void boot_animation(void *unused) // by simon
 {
 	int i;
 
-	for (i=0; i<3; i++) {
+	for (i=0; i<2; i++) {
 		boot_image(boot_on_01);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_02);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_03);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_04);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_05);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_06);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
-		boot_image(boot_on_07);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/5);
+		boot_image(boot_on_02);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/4);
+		boot_image(boot_on_03);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/4);
+		boot_image(boot_on_04);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/4);
+		boot_image(boot_on_05);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/4);
+		boot_image(boot_on_06);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/4);
+		boot_image(boot_on_07);	current->state = TASK_INTERRUPTIBLE; schedule_timeout(HZ/4);
 	}
 		boot_image(boot_on_07);
 }

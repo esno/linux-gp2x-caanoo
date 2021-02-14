@@ -742,13 +742,18 @@ pollux_ioctl_init(struct pollux_fb_ioctl_ops *ioctl_ops)
 	ioctl_ops->R8G8B8_to_R5G6B5 = R8G8B8toR5G6B5;
 	ioctl_ops->R5G6B5_to_R8G8B8 = R5G6B5toR8G8B8;
     ioctl_ops->set_bpp = setBpp;
-    if(!(pollux_gpio_getpin(BD_VER_LSB) || pollux_gpio_getpin(BD_VER_MSB)) )
+    if(!(pollux_gpio_getpin(BD_VER_LSB) || pollux_gpio_getpin(BD_VER_MSB)))
     {
 		now_contrast 	= 0x8;
     	now_brightness 	= 0x84;
     	is_lcd = SEL_TCL_LCD;
 	}
-	else is_lcd = SEL_LG_LCD;
+	else if( pollux_gpio_getpin(BD_VER_LSB) && pollux_gpio_getpin(BD_VER_MSB))
+	{
+	    now_contrast 	= 0x8;
+    	now_brightness 	= 0x84;
+    	is_lcd = SEL_TCL_LCD;
+	}else is_lcd = SEL_LG_LCD;
 
     MES_MLC_Initialize();
 	MES_MLC_SetBaseAddress(0, POLLUX_VA_MLC_PRI);
@@ -1717,6 +1722,21 @@ int check_hbp(int hbp_value)
 
 	return ret_val;
 }
+
+//lars added by smhong for exporting tv-display status to userspace
+int pollux_tv_display_status(void)
+{
+	int ret_val = 3;
+	if(tv_mode == DEFAULT_TV_MODE) {
+		ret_val = 0;
+	} else if(tv_mode == MES_DPC_VBS_NTSC_M) {
+		ret_val = 1;
+	} else if(tv_mode == MES_DPC_VBS_PAL_BGHI) {
+		ret_val = 2;
+	}
+	return ret_val;
+}
+EXPORT_SYMBOL(pollux_tv_display_status);
 
 /*
  * ------------------------------------------------------------------------------

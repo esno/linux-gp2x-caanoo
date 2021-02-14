@@ -1150,6 +1150,15 @@ static int pollux_fb_init_registers(struct pollux_fb_info *fbi)
 }
 
 
+// added by smhong for export tvout status to userspace(sysfs)
+extern int pollux_tv_display_status(void);
+static ssize_t tvout_status_show(struct device * dev, struct device_attribute * attr, char * buf)
+{
+	return sprintf(buf, "%d\n", pollux_tv_display_status());
+}
+static DEVICE_ATTR(tvout, S_IRUGO, tvout_status_show, NULL);
+
+
 static int __init pollux_fb_probe(struct platform_device *pdev)
 {
 	struct pollux_fb_info *mfbinf;
@@ -1287,7 +1296,7 @@ static int __init pollux_fb_probe(struct platform_device *pdev)
 		fbinfo->fix.id,	fbinfo->var.xres, fbinfo->var.yres, fbinfo->var.bits_per_pixel,
 		mfbinf->map_phys, (u_int)mfbinf->map_virt, mfbinf->map_size);
 #endif
-
+	ret = device_create_file(&pdev->dev, &dev_attr_tvout);
 	return 0;
 
 free_video_memory:
