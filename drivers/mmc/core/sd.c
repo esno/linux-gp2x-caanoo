@@ -86,12 +86,21 @@ static void mmc_decode_cid(struct mmc_card *card)
 
 	card->cid.year += 2000; /* SD cards year offset */
 
+#if 0
     InfoTemp = card->cid.manfid | (card->cid.oemid << 8) |
                 ( ((card->cid.fwrev & 0x0f) |  ( (card->cid.hwrev & 0x0f) <<4)) << 24 );
 
     SetInfo( InfoTemp, 1);
     InfoTemp = card->cid.serial;
     SetInfo( InfoTemp, 0);
+#else
+    InfoTemp = ((card->cid.prod_name[1] << 24) | (card->cid.prod_name[2] << 16) | (card->cid.prod_name[3] << 8) |
+                    (card->cid.prod_name[4]));
+
+    SetInfo( InfoTemp, 1);
+    InfoTemp = card->cid.prod_name[0];
+    SetInfo( InfoTemp, 0);
+#endif
 }
 
 /*
