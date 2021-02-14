@@ -1396,7 +1396,6 @@ config CRAMFS
 	tristate "Compressed ROM file system support (cramfs)"
 	depends on BLOCK
 	select ZLIB_INFLATE
-	select LZO_DECOMPRESS
 	help
 	  Saying Y here includes support for CramFs (Compressed ROM File
 	  System).  CramFs is designed to be a simple, small, and compressed

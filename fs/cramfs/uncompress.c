@@ -20,16 +20,12 @@
 #include <linux/vmalloc.h>
 #include <linux/zlib.h>
 #include <linux/cramfs_fs.h>
-#include <linux/lzo.h>
 
 static z_stream stream;
 static int initialized;
 
-/*
- * uncompress with ZLIB
- * Returns length of decompressed data.
- */
-int cramfs_uncompress_block_zlib(void *dst, int dstlen, void *src, int srclen)
+/* Returns length of decompressed data. */
+int cramfs_uncompress_block(void *dst, int dstlen, void *src, int srclen)
 {
 	int err;
 
@@ -52,26 +48,7 @@ int cramfs_uncompress_block_zlib(void *dst, int dstlen, void *src, int srclen)
 	return stream.total_out;
 
 err:
-	printk("ZLIB Error %d while decompressing!\n", err);
-	printk("%p(%d)->%p(%d)\n", src, srclen, dst, dstlen);
-	return 0;
-}
-
-/*
- * uncompress with LZO
- * Returns length of decompressed data.
- */
-int cramfs_uncompress_block_lzo(void *dst, int dstlen, void *src, int srclen)
-	{
-		int err;
-
-		err = lzo1x_decompress_safe(src,srclen,dst,(unsigned int *)&dstlen);
-		if (err != LZO_E_OK)
-			goto err;
-		return dstlen;
-
-err:
-	printk("LZO Error %d while decompressing!\n", err);
+	printk("Error %d while decompressing!\n", err);
 	printk("%p(%d)->%p(%d)\n", src, srclen, dst, dstlen);
 	return 0;
 }

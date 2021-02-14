@@ -10,8 +10,6 @@ struct cramfs_sb_info {
 			unsigned long blocks;
 			unsigned long files;
 			unsigned long flags;
-			/* function pointer to uncompress block */
-			int (* cramfs_uncompress_block) (void *dst, int dstlen, void *src, int srclen);
 };
 
 static inline struct cramfs_sb_info *CRAMFS_SB(struct super_block *sb)

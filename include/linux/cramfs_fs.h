@@ -74,7 +74,6 @@ struct cramfs_super {
 #define CRAMFS_FLAG_HOLES		0x00000100	/* support for holes */
 #define CRAMFS_FLAG_WRONG_SIGNATURE	0x00000200	/* reserved */
 #define CRAMFS_FLAG_SHIFTED_ROOT_OFFSET	0x00000400	/* shifted root fs */
-#define CRAMFS_FLAG_LZO_COMPRESSION	0x00000800	/* LZO compression is used */
 
 /*
  * Valid values in super.flags.  Currently we refuse to mount
@@ -84,16 +83,11 @@ struct cramfs_super {
 #define CRAMFS_SUPPORTED_FLAGS	( 0x000000ff \
 				| CRAMFS_FLAG_HOLES \
 				| CRAMFS_FLAG_WRONG_SIGNATURE \
-				| CRAMFS_FLAG_SHIFTED_ROOT_OFFSET \
-				| CRAMFS_FLAG_LZO_COMPRESSION )
-
-/* function pointer for uncompress function */
+				| CRAMFS_FLAG_SHIFTED_ROOT_OFFSET )
 
 /* Uncompression interfaces to the underlying zlib */
-int cramfs_uncompress_block_zlib(void *dst, int dstlen, void *src, int srclen);
+int cramfs_uncompress_block(void *dst, int dstlen, void *src, int srclen);
 int cramfs_uncompress_init(void);
 void cramfs_uncompress_exit(void);
-/* Uncompression interfaces to the underlying lzo */
-int cramfs_uncompress_block_lzo(void *dst, int dstlen, void *src, int srclen);
 
 #endif
