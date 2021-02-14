@@ -14,12 +14,12 @@
 #include <linux/uaccess.h>
 #include <linux/rtc.h>
 #include <linux/irq.h>
+#include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <asm/arch/regs-gpio.h>
 
 #include <asm/arch/pollux.h>
 #include "pollux_keyif.h"
-
 
 //extern spinlock_t rtc_lock;
 
@@ -45,6 +45,8 @@
 
 #define BD_VER_LSB              POLLUX_GPC18
 #define BD_VER_MSB              POLLUX_GPC17
+
+#define HOST2_EN                POLLUX_GPC16
 
 #define USB_INTERRUPT   1
 
@@ -79,21 +81,21 @@ static irqreturn_t usb_vbus_irq(int irq, void *dev_id )
 	{
 		usb_con->check = 0;
 		usb_con->vbus_en = USB_VBUS_REMOVED;
-                set_irq_type(USB_VBUS_DECT_IRQ, IRQT_RISING);	/* Current GPIO value is low: wait for raising high */
+		set_irq_type(USB_VBUS_DECT_IRQ, IRQT_RISING);	/* Current GPIO value is low: wait for raising high */
     }
     else if( usb_con->vbus_en == USB_VBUS_REMOVED && usben_state == 1)
 	{
 		usb_con->check = 1;
 		usb_con->vbus_en = USB_VBUS_INSERTED;
-                set_irq_type(USB_VBUS_DECT_IRQ, IRQT_FALLING);	/* Current GPIO value is hight: wait for raising low */
+    	set_irq_type(USB_VBUS_DECT_IRQ, IRQT_FALLING);	/* Current GPIO value is hight: wait for raising low */
 
     }
     else
     {
-        if( usben_state == 1 ) // high
-                set_irq_type( USB_VBUS_DECT_IRQ, IRQT_FALLING); // falling
-        else
-                set_irq_type( USB_VBUS_DECT_IRQ, IRQT_RISING);
+        if( usben_state == 1 ) // high 상태이면
+    		set_irq_type( USB_VBUS_DECT_IRQ, IRQT_FALLING); // falling으로 바꾼다.
+    	else
+    		set_irq_type( USB_VBUS_DECT_IRQ, IRQT_RISING);
     }
 
 	enable_irq(irq);
@@ -128,7 +130,7 @@ ssize_t POLLUXkey_read(struct file *filp, char *Putbuf, size_t length, loff_t *f
 		keyTemp|=( pollux_gpio_getpin(POLLUX_GPC5) << VK_FB); //B
 	    keyTemp|=( pollux_gpio_getpin(POLLUX_GPC6) << VK_FX); //X
         keyTemp|=( pollux_gpio_getpin(POLLUX_GPC7) << VK_FY); //Y
-        keyTemp|=( pollux_gpio_getpin(POLLUX_GPA12) << VK_TAT); //ANALOG TAT
+    	keyTemp|=( pollux_gpio_getpin(POLLUX_GPA12) << VK_TAT); //ANALOG TAT
     }else{ /* key hold */
 	     keyValue = 0;
 	     copy_to_user( Putbuf, &keyValue, 4);
@@ -170,6 +172,9 @@ int POLLUXkey_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,uns
 	{
         case IOCTL_SET_POWER_OFF:
             printk("GO GO GO Power off \n");
+            pollux_gpio_setpin(HOST2_EN ,0);
+            msleep(200);
+
             pollux_set_gpio_func(POLLUX_GPA18, POLLUX_GPIO_MODE_GPIO);
 		    pollux_gpio_set_inout(POLLUX_GPA18, POLLUX_GPIO_OUTPUT_MODE);
 		    pollux_gpio_setpin(GPIO_POWER_OFF ,0);
@@ -208,8 +213,8 @@ int POLLUXkey_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,uns
             if(usbCon != NULL)
             {
                 usbCon->vbus_en = USB_VBUS_REMOVED;
-                usbCon->check = 0;
-                set_irq_type(USB_VBUS_DECT_IRQ, IRQT_RISING);	/* Current GPIO value is low: wait for raising high */
+    	        usbCon->check = 0;
+    	        set_irq_type(USB_VBUS_DECT_IRQ, IRQT_RISING);	/* Current GPIO value is low: wait for raising high */
                 printk("IOCTL_SET_SOFT_DISCONNECT:\n");
             }
             return 0;
@@ -255,22 +260,22 @@ int POLLUXkey_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,uns
             }
             return 0;
         case IOCTL_GET_ID_NUM:
-            {
-                if(!is_info) return -EFAULT;
-                if( copy_to_user((unsigned char*)arg, uInfo, sizeof(unsigned char[32])) )
-                    return -EFAULT;
+        	{
+            	if(!is_info) return -EFAULT;
+            	if( copy_to_user((unsigned char*)arg, uInfo, sizeof(unsigned char[32])) )
+	        		return -EFAULT;
             }
             return 0;
         case IOCTL_SET_ID_NUM:
-            {
-                unsigned char *buf = uInfo;
-                int i;
-                if( copy_from_user((void*)buf,(const void*)arg,sizeof(unsigned char[32])) )
-                    return -EFAULT;
-                is_info = 1;
-            }
+        	{
+          		unsigned char *buf = uInfo;
+          		int i;
+            	if( copy_from_user((void*)buf,(const void*)arg,sizeof(unsigned char[32])) )
+	            	return -EFAULT;
+        		is_info = 1;
+        	}
             return 0;
-        case IOCTL_GET_ID_STATUS:
+     	case IOCTL_GET_ID_STATUS:
             {
                 int i;
                 int status = is_info;
@@ -312,7 +317,7 @@ int POLLUXkey_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,uns
         case IOCTL_GET_PRODUCT_VERSION:
             {
                 unsigned int val;
-                val = 0x4E3335;
+              	val = 0x4E3335;
 				if( copy_to_user((unsigned char*)arg, &val, sizeof(unsigned int)) )
 	                return -EFAULT;
             }
@@ -468,7 +473,6 @@ static void __exit POLLUX_key_exit()
 	platform_driver_unregister(&POLLUX_key_driver);
 
 	printk(KERN_NOTICE "POLLUX gpio to key Driver release\n");
-
 }
 module_init(POLLUX_key_init);
 module_exit(POLLUX_key_exit);
