@@ -1171,11 +1171,17 @@ static inline void usb_stop_pm(struct usb_device *udev)
 /* Lars Added Below Function For Detecting wireless lan device */
 #define RALINK_RT3070_VENDOR_ID		(0x148f)
 #define RALINK_RT3070_PRODUCT_ID	(0x3070)
+#define RALINK_RT8070_VENDOR_ID		(0x0411)
+#define RALINK_RT8070_PRODUCT_ID	(0x01a2)
 int check_wireless_lan_device(struct usb_device *udev)
 {
 	int ret_val = 0;
 	if((udev->descriptor.idVendor == RALINK_RT3070_VENDOR_ID) &&
 		(udev->descriptor.idProduct == RALINK_RT3070_PRODUCT_ID)) {
+		ret_val = 1;
+	}
+	else if((udev->descriptor.idVendor == RALINK_RT8070_VENDOR_ID) &&
+		(udev->descriptor.idProduct == RALINK_RT8070_PRODUCT_ID)) {
 		ret_val = 1;
 	}
 
