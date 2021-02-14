@@ -144,6 +144,14 @@ pollux_rtc_readtime(struct device *dev, struct rtc_time *tm)
 
     gprintk("%4d-%02d-%02d %02d:%02d:%02d\n", 1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 
+    if( (1900 + tm->tm_year) < 2000)
+    {
+        tm->tm_year = 110;
+		tm->tm_mon = 0;
+		tm->tm_mday =1;
+		tm->tm_wday =1;
+    }
+
     return 0;
 }
 
