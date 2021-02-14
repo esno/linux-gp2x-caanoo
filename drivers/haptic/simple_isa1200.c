@@ -115,6 +115,7 @@ I2C_CLIENT_INSMOD_1(isa1200);
 
 //chip_detect_flag_t  chip_status[ISA1200_CHIP_NUM] = {CHIP_NOT_DETECTED, CHIP_NOT_DETECTED};
 struct i2c_client * i2c_client_isa1200[ISA1200_CHIP_NUM];
+static unsigned int isa1200_chip_disabled;
 //pattern_data_t * pattern_data;
 static int individual_mode = 0;
 
@@ -176,6 +177,40 @@ void isa1200_disable_sequence(void)
 	set_isa1200_gpio_len(0);
 }
 
+static void isa1200_chip_disabled_fflush(void)
+{
+	isa1200_chip_disabled = 0;
+}
+
+static void mask_isa1200_chip_disabled(unsigned short i2c_addr)
+{
+	if(i2c_addr == I2C_ISA1200A_ADDR)
+		isa1200_chip_disabled |= 0x01;
+	else if(i2c_addr == I2C_ISA1200B_ADDR)
+		isa1200_chip_disabled |= (0x01 << 1);
+}
+
+static int check_isa1200_chip_disabled(unsigned short i2c_addr)
+{
+	int ret_val = 0;
+	int compare_value = 0;
+
+	if(i2c_addr == I2C_ISA1200A_ADDR)
+		compare_value = 0x01;
+		//(isa1200_chip_disabled & 0x01) ? ret_val = 1 : ret_val = 0;
+	else if(i2c_addr == I2C_ISA1200B_ADDR)
+		compare_value = 0x01 << 1;
+		//(isa1200_chip_disabled & (0x01 << 1)) ? ret_val = 1 : ret_val = 0;
+	else
+		return ret_val;
+
+	if(isa1200_chip_disabled & compare_value)
+		ret_val = 1;
+	else
+		ret_val = 0;
+
+	return ret_val;
+}
 
 static int isa1200_read_reg(struct i2c_client * client, int reg)
 {
@@ -192,10 +227,14 @@ static int isa1200_write_reg(struct i2c_client * client, int reg, u8 value)
 {
 	int ret;
 
-	ret = i2c_smbus_write_byte_data(client, reg, value);
-	if(ret < 0)
-	   dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+	if(check_isa1200_chip_disabled(client->addr))
+		return 0;
 
+	ret = i2c_smbus_write_byte_data(client, reg, value);
+	if(ret < 0) {
+	    dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+		mask_isa1200_chip_disabled(client->addr);
+	}
 	return ret;
 }
 
@@ -400,8 +439,8 @@ int pollux_haptic_open(struct inode * inode, struct file * filp)
 {
 	int i;
 	struct i2c_client * client;
-
 	//printk("%s()\n", __func__);
+	isa1200_chip_disabled_fflush();
 	isa1200_enable_sequence();
 
 	for(i = 0; i < ISA1200_CHIP_NUM; i++) {
